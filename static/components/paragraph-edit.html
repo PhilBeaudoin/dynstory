@@ -1,0 +1,30 @@
+<link rel="import" href="/polymer/polymer.html">
+
+<dom-module id="paragraph-edit">
+  <template>
+    <form>
+      <div>
+        <textarea on-keypress="handleChange" name="content" id="text"
+            rows="10" cols="60"></textarea>
+      </div>
+    </form>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'paragraph-edit',
+      properties: {
+      },
+      // Element Lifecycle
+      ready: function() {
+      },
+      attached: function() {
+      },
+      detached: function() {
+      },
+      handleChange: function() {
+        // TODO(PhilBeaudoin): Schedule a change.
+      }
+    });
+  </script>
+</dom-module>
