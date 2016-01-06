@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright 2016 Philippe Beaudoin
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="/js/base/base.html">
+
+<script>
+'use strict';
+
+base.exportTo('ds.model', function() {
+
+  function Paragraph(fullText) {
+    this.fullText_ = fullText;
+  }
+
+  var isFunctionRegExp = new RegExp(/^#\w+$/);
+  var isNumberRegExp = new RegExp(/^\s*-?\d+\s*$/);
+  var isWhitespaceRegExp = new RegExp(/^\s+$/);
+  var tokenizingRegExp = new RegExp(/#\w+|[(),|"#]|[^(),|"#]+/g);
+
+  Paragraph.prototype = {
+
+    get fullText() {
+      return this.fullText_;
+    },
+
+    // Compile fullText. The supported language is:
+    //   #someFunction("optional parameters",3,5)
+    //   #someFunctionWithoutParams
+    //   Regular text #withAFunctionInIt or |special text|.
+    compile: function() {
+      var tokens = tokenize(this.fullText_);
+      var ast = [];
+      var error = parseText(ast, tokens);
+      // TODO(PhilBeaudoin): Just for debugging.
+      console.log(JSON.stringify(ast));
+      return error;
+    }
+  };
+
+  function tokenize(text) {
+    return text.match(tokenizingRegExp);
+  }
+
+  function parseText(ast, tokens) {
+    var currNode;
+    var error = undefined;
+    var token;
+    while (error === undefined && (token = tokens.shift()) !== undefined) {
+      if (isFunctionRegExp.test(token)) {
+        if (currNode)
+          ast.push(currNode);
+        tokens.unshift(token);
+        error = parseFunction(ast, tokens);
+        currNode = undefined;
+      } else if (token === "|") {
+        if (currNode)
+          ast.push(currNode);
+        error = parseSpecialText(ast, tokens);
+        currNode = undefined;
+      } else {
+        currNode = currNode || {
+          type: "Text",
+          value: ""
+        }
+        currNode.value += token;
+      }
+    }
+    if (currNode)
+      ast.push(currNode);
+    return error;
+  }
+
+  function parseSpecialText(ast, tokens) {
+    var currNode;
+    var error = undefined;
+    var token;
+    while (error === undefined && (token = tokens.shift()) !== undefined) {
+      if (isFunctionRegExp.test(token)) {
+        if (currNode)
+          ast.push(currNode);
+        tokens.unshift(token);
+        error = parseFunction(ast, tokens);
+        currNode = undefined;
+      } else if (token === "|") {
+        if (currNode)
+          ast.push(currNode);
+        return error;
+      } else {
+        currNode = currNode || {
+          type: "SpecialText",
+          value: ""
+        }
+        currNode.value += token;
+      }
+    }
+    return "Syntax error. Special text not closed.";
+  }
+
+  function parseFunction(ast, tokens) {
+    var functionName = tokens.shift();
+    if (functionName === undefined)
+      return "Internal error. Parsing function without function name.";
+    if (!isFunctionRegExp.test(functionName))
+      return "Internal error. Invalid function name.";
+    var error = undefined;
+    var functionNode = {
+      type: "Function",
+      name: functionName.substr(1),
+      params: []
+    };
+    ast.push(functionNode);
+    var token = tokens.shift();
+    if (token === undefined)
+      return error;
+    if (token === "(")
+      error = parseParams(functionNode.params, tokens);
+    else
+      tokens.unshift(token)
+    return error;
+  }
+
+  function parseParams(params, tokens) {
+    // Opening parenthesis was consumed.
+    var error = undefined;
+    while(error == undefined) {
+      eatWhitespace(tokens);
+      error = parseParam(params, tokens);
+      eatWhitespace(tokens);
+      var token = tokens.shift();
+      if (error || token === ")")
+        return error;
+      if (token !== ",")
+        error = "Syntax error. Invalid token in parameter list.";
+    }
+    return error;
+  }
+
+  function parseParam(params, tokens) {
+    var token = tokens.shift();
+    if (token === "\"") {
+      // Parse the string.
+      var string = "";
+      while ((token = tokens.shift()) !== undefined) {
+        if (token === "\"") {
+          params.push(string)
+          return undefined;
+        }
+        string += token;
+      }
+      return "Syntax error. String parameter doesn't have a closing quote.";
+    } else {
+      if (!isNumberRegExp.test(token))
+        return "Syntax error. Parameter isn't a string or a number.";
+      params.push(parseInt(token));
+    }
+    return undefined;
+  }
+
+  function eatWhitespace(tokens) {
+    var token;
+    while ((token = tokens.shift()) !== undefined) {
+      if (!isWhitespaceRegExp.test(token)) {
+        tokens.unshift(token);
+        return;
+      }
+    }
+  }
+
+  return {
+    Paragraph: Paragraph
+  };
+});
+</script>

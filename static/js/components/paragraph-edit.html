@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <!--
 @license
 Copyright 2016 Philippe Beaudoin
@@ -17,6 +18,9 @@ limitations under the License.
 
 <link rel="import" href="/polymer/polymer.html">
 
+<link rel="import" href="/js/model/paragraph.html">
+
+
 <dom-module id="paragraph-edit">
   <template>
     <form>
@@ -34,13 +38,27 @@ limitations under the License.
       },
       // Element Lifecycle
       ready: function() {
+        this.compileTimer_ = undefined;
       },
       attached: function() {
       },
       detached: function() {
       },
       handleChange: function() {
-        // TODO(PhilBeaudoin): Schedule a change.
+        this.scheduleCompile_();
+      },
+      scheduleCompile_: function() {
+        if (this.compileTimer_)
+          clearTimeout(this.compileTimer_);
+        this.compileTimer_ = setTimeout(this.createParagraph_.bind(this), 2000);
+      },
+      createParagraph_: function() {
+        this.compileTimer_ = undefined;
+        this.paragraph_ = new ds.model.Paragraph(this.$.text.value);
+        error = this.paragraph_.compile();
+        // TODO(PhilBeaudoin): Report errors in the UI.
+        if (error)
+          console.log(error);
       }
     });
   </script>
