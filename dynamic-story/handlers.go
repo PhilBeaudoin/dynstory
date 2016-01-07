@@ -16,6 +16,9 @@ package dynstory
 import (
     "io/ioutil"
     "net/http"
+
+    "appengine"
+    "appengine/user"
 )
 
 var (
@@ -33,5 +36,24 @@ func init() {
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
+  w.Header().Set("Content-type", "text/html; charset=utf-8")
+  ctx := appengine.NewContext(r)
+  u := user.Current(ctx)
+  if u == nil {
+    url, err := user.LoginURL(ctx, r.URL.String())
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+    w.Header().Set("Location", url)
+    w.WriteHeader(http.StatusFound)
+    return
+  }
+
+  if !user.IsAdmin(ctx) {
+    http.Error(w, "Unauthorized user.", http.StatusUnauthorized)
+    return
+  }
+
   w.Write(mainTemplate)
 }
