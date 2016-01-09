@@ -33,6 +33,7 @@ func init() {
   mainTemplate = content
 
   http.HandleFunc("/", root)
+  http.HandleFunc("/save-paragraph/", saveParagraph)
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -57,3 +58,12 @@ func root(w http.ResponseWriter, r *http.Request) {
 
   w.Write(mainTemplate)
 }
+
+func saveParagraph(w http.ResponseWriter, r *http.Request) {
+  ctx := appengine.NewContext(r)
+  r.ParseForm()
+  ctx.Infof("Url: %v", r.URL)
+  ctx.Infof("Body: %v", r.Body)
+  ctx.Infof("PostForm: %v", r.PostForm)
+}
+

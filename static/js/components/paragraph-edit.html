@@ -16,13 +16,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<link rel="import" href="/polymer/polymer.html">
+<link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="/js/model/paragraph.html">
 
 
 <dom-module id="paragraph-edit">
   <template>
+    <iron-ajax id="ajaxPost" url="/save-paragraph/" method="POST"
+        on-response="saved_"></iron-ajax>
     <form>
       <div>
         <textarea on-keypress="handleChange" name="content" id="text"
@@ -56,9 +59,17 @@ limitations under the License.
         this.compileTimer_ = undefined;
         this.paragraph_ = new ds.model.Paragraph(this.$.text.value);
         error = this.paragraph_.compile();
+        this.saveParagraph_();
         // TODO(PhilBeaudoin): Report errors in the UI.
         if (error)
           console.log(error);
+      },
+      saveParagraph_: function() {
+        this.$.ajaxPost.body = JSON.stringify(this.paragraph_);
+        this.$.ajaxPost.generateRequest();
+      },
+      saved_: function() {
+        console.log('Saved!');
       }
     });
   </script>

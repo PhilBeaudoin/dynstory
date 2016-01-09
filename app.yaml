@@ -4,11 +4,8 @@ runtime: go
 api_version: go1
 
 handlers:
-- url: /polymer
-  static_dir: bower_components/polymer
-
-- url: /webcomponentsjs
-  static_dir: bower_components/webcomponentsjs
+- url: /components
+  static_dir: bower_components
 
 - url: /js
   static_dir: static/js
