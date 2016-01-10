@@ -14,12 +14,16 @@
 package dynstory
 
 import (
-    "io/ioutil"
-    "net/http"
-
     "appengine"
     "appengine/user"
+    "encoding/json"
+    "io/ioutil"
+    "net/http"
 )
+
+type Paragraph struct {
+  FullText string
+}
 
 var (
   mainTemplate []byte
@@ -61,9 +65,12 @@ func root(w http.ResponseWriter, r *http.Request) {
 
 func saveParagraph(w http.ResponseWriter, r *http.Request) {
   ctx := appengine.NewContext(r)
-  r.ParseForm()
-  ctx.Infof("Url: %v", r.URL)
-  ctx.Infof("Body: %v", r.Body)
-  ctx.Infof("PostForm: %v", r.PostForm)
+  dec := json.NewDecoder(r.Body)
+  var p Paragraph
+  if err := dec.Decode(&p); err != nil {
+    ctx.Infof("Fatal error")
+    return
+  }
+  ctx.Infof("%+v", p)
 }
 

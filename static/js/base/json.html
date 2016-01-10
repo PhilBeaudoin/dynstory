@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright 2016 Philippe Beaudoin
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="/js/base/base.html">
+
+<script>
+'use strict';
+
+base.exportTo('base.json', function() {
+  // Similar to JSON.parse, but parses into an existing object. Also, expects
+  // the JSON format to be go-style, with properties capitalized and trailing
+  // underscore removed.
+  function parse(json, intoObj) {
+    var obj = JSON.parse(json);
+
+    Object.getOwnPropertyNames(intoObj).forEach(function(property) {
+      intoObj[property] = obj[toGoProperty(property)]
+    });
+  }
+
+  // Similar to JSON.stringify, formats parameters go-style with properties
+  // capitalized and trailing underscore removed.
+  function stringify(obj) {
+    return JSON.stringify(createTempObj(obj));
+  }
+
+  // Convert a property from javascript-format to go-format. Make sure the first
+  // letter is capitalized and remove any trailing underscore.
+  function toGoProperty(property) {
+    var len = property.length
+    if (len === 0)
+      return property;
+
+    var result = property.charAt(0).toUpperCase() + property.substr(1);
+    if (len === 1)
+      return result;
+    if (result.charAt(len - 1) === '_')
+      return result.substr(0, len - 1);
+    return result;
+  }
+
+  // Create a temporary objet that matches 'obj' except it has its properties
+  // renamed in go-format. Operates recursively.
+  function createTempObj(obj) {
+    if (typeof obj !== 'object')
+      return obj;
+
+    if (Array.isArray(obj)) {
+      var tempObj = [];
+      obj.forEach(function(item) {
+        tempObj.push(createTempObj(item));
+      });
+      return tempObj;
+    }
+
+    var tempObj = {}
+    Object.getOwnPropertyNames(obj).forEach(function(property) {
+      tempObj[toGoProperty(property)] = createTempObj(obj[property]);
+    });
+    return tempObj;
+  }
+
+  return {
+    parse: parse,
+    stringify: stringify
+  };
+})
+</script>
