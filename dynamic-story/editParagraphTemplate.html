@@ -24,7 +24,7 @@ limitations under the License.
     <link rel="import" href="/js/components/paragraph-edit.html">
   </head>
   <body unresolved>
-    <paragraph-edit>
+    <paragraph-edit {{if .}}key="{{.}}"{{end}}>
     </paragraph-edit>
   </body>
 </html>

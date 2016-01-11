@@ -25,8 +25,11 @@ limitations under the License.
 
 <dom-module id="paragraph-edit">
   <template>
-    <iron-ajax id="ajaxPost" url="/save-paragraph/" method="POST"
-        content-type="application/json" on-response="saved_"></iron-ajax>
+    <iron-ajax id="ajaxPost" url="/save-paragraph/" handle-as="text"
+        method="POST" content-type="application/json" on-response="saved_">
+    </iron-ajax>
+    <iron-ajax id="ajaxGet" url="/get-paragraph/" handle-as="json"
+        on-response="loaded_"></iron-ajax>
     <form>
       <div>
         <textarea on-keypress="handleChange" name="content" id="text"
@@ -39,10 +42,17 @@ limitations under the License.
     Polymer({
       is: 'paragraph-edit',
       properties: {
+        key: String
       },
       // Element Lifecycle
       ready: function() {
         this.compileTimer_ = undefined;
+        if (this.key && this.key.length > 0) {
+          this.$.ajaxGet.params = {
+            key: this.key
+          };
+          this.$.ajaxGet.generateRequest();        
+        }
       },
       attached: function() {
       },
@@ -66,11 +76,28 @@ limitations under the License.
           console.log(error);
       },
       saveParagraph_: function() {
+        if (this.key && this.key.length > 0) {
+          this.$.ajaxPost.params = {
+            key: this.key
+          };
+        }
         this.$.ajaxPost.body = base.json.stringify(this.paragraph_);
         this.$.ajaxPost.generateRequest();
       },
-      saved_: function() {
+      saved_: function(data) {
         console.log('Saved!');
+        this.key = data.detail.response;
+      },
+      loaded_: function(data) {
+        console.log('Loaded!');
+        this.paragraph_ = new ds.model.Paragraph();
+        base.json.copyGoStyleIntoObject(data.detail.response, this.paragraph_);
+        this.$.text.value = this.paragraph_.fullText;
+        error = this.paragraph_.compile();
+        this.saveParagraph_();
+        // TODO(PhilBeaudoin): Report errors in the UI.
+        if (error)
+          console.log(error);
       }
     });
   </script>

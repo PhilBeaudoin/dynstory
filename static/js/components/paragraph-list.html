@@ -26,7 +26,10 @@ limitations under the License.
 <dom-module id="paragraph-list">
   <template>
     <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
-        on-response="refreshed_"></iron-ajax>
+        on-response="refreshed_" auto></iron-ajax>
+    <template is="dom-repeat" items="{{paragraphInfos}}">
+      <div>Full text: <a href="/edit-paragraph/?key={{item.key}}">{{item.fullText}}</a></div>
+    </template>
     <form>
       <div>
         <input on-tap="refresh" value="Refresh" id="refresh" type="button">
@@ -43,6 +46,7 @@ limitations under the License.
       // Element Lifecycle
       ready: function() {
         this.paragraphMap = {};
+        this.paragraphInfos = [];
       },
       attached: function() {
       },
@@ -54,10 +58,15 @@ limitations under the License.
       refreshed_: function(data) {
         var map = data.detail.response;
         this.paragraphMap = {};
+        this.paragraphKeys = []; 
         for (var key in map) {
           var paragraph = new ds.model.Paragraph();
           base.json.copyGoStyleIntoObject(map[key], paragraph);
           this.paragraphMap[key] = paragraph;
+          this.push('paragraphInfos', {
+            key: key,
+            fullText: paragraph.fullText
+          });
         }
       }
     });

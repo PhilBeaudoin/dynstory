@@ -21,6 +21,7 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
+    "html/template"
     "io/ioutil"
     "net/http"
     "strings"
@@ -32,7 +33,8 @@ type Paragraph struct {
 
 var (
   mainTemplate []byte
-  newParagraphTemplate []byte
+  editParagraphTemplate = template.Must(template.ParseFiles(
+      "dynamic-story/editParagraphTemplate.html"))
 )
 
 func init() {
@@ -41,15 +43,11 @@ func init() {
     panic(err)
   }
   mainTemplate = content
-  content, err = ioutil.ReadFile("dynamic-story/newParagraphTemplate.html")
-  if err != nil {
-    panic(err)
-  }
-  newParagraphTemplate = content
 
   http.HandleFunc("/", root)
+  http.HandleFunc("/edit-paragraph/", editParagraph)
   http.HandleFunc("/get-paragraphs/", getParagraphs)
-  http.HandleFunc("/new-paragraph/", newParagraph)
+  http.HandleFunc("/get-paragraph/", getParagraph)
   http.HandleFunc("/save-paragraph/", saveParagraph)
 }
 
@@ -59,6 +57,17 @@ func root(w http.ResponseWriter, r *http.Request) {
   }
   w.Header().Set("Content-type", "text/html; charset=utf-8")
   w.Write(mainTemplate)
+}
+
+func editParagraph(w http.ResponseWriter, r *http.Request) {
+  if !checkUser(w, r) {
+    return
+  }
+  w.Header().Set("Content-type", "text/html; charset=utf-8")
+  err := editParagraphTemplate.Execute(w, r.FormValue("key"))
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+  }
 }
 
 func getParagraphs(w http.ResponseWriter, r *http.Request) {
@@ -92,12 +101,28 @@ func getParagraphs(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "{%s}\n", strings.Join(results, ",\n"))
 }
 
-func newParagraph(w http.ResponseWriter, r *http.Request) {
+func getParagraph(w http.ResponseWriter, r *http.Request) {
   if !checkUser(w, r) {
     return
   }
-  w.Header().Set("Content-type", "text/html; charset=utf-8")
-  w.Write(newParagraphTemplate)
+  ctx := appengine.NewContext(r)
+  var p Paragraph
+  key, err := datastore.DecodeKey(r.FormValue("key"))
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  err = datastore.Get(ctx, key, &p)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  w.Header().Set("Content-type", "application/json; charset=utf-8")
+  enc := json.NewEncoder(w)
+  if err := enc.Encode(&p); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
 }
 
 func saveParagraph(w http.ResponseWriter, r *http.Request) {
@@ -111,13 +136,22 @@ func saveParagraph(w http.ResponseWriter, r *http.Request) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-
-  key, err := datastore.Put(
-      ctx, datastore.NewIncompleteKey(ctx, "Paragraph", nil), &p)
+  var err error
+  var key *datastore.Key
+  keyString := r.FormValue("key");
+  if keyString != "" {
+    key, err = datastore.DecodeKey(keyString)
+  } else {
+    key = datastore.NewIncompleteKey(ctx, "Paragraph", nil)
+  }
+  if err == nil {
+    key, err = datastore.Put(ctx, key, &p)
+  }
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
+
   w.Header().Set("Content-type", "text/plain; charset=utf-8")
   fmt.Fprintf(w, "%s", key.Encode())
 }
