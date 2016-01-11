@@ -58,7 +58,7 @@ limitations under the License.
       refreshed_: function(data) {
         var map = data.detail.response;
         this.paragraphMap = {};
-        this.paragraphKeys = []; 
+        this.splice('paragraphInfos', 0, this.paragraphInfos.length);
         for (var key in map) {
           var paragraph = new ds.model.Paragraph();
           base.json.copyGoStyleIntoObject(map[key], paragraph);
