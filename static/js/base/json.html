@@ -22,12 +22,17 @@ limitations under the License.
 'use strict';
 
 base.exportTo('base.json', function() {
+
   // Similar to JSON.parse, but parses into an existing object. Also, expects
   // the JSON format to be go-style, with properties capitalized and trailing
   // underscore removed.
   function parse(json, intoObj) {
-    var obj = JSON.parse(json);
+    copyGoStyleIntoObject(JSON.parse(json), intoObj)
+  }
 
+  // Move pre-parsed json into a given object. Expects the JSON format to be
+  // go-style, with properties capitalized and trailing underscore removed.
+  function copyGoStyleIntoObject(obj, intoObj) {
     Object.getOwnPropertyNames(intoObj).forEach(function(property) {
       intoObj[property] = obj[toGoProperty(property)]
     });
@@ -77,6 +82,7 @@ base.exportTo('base.json', function() {
 
   return {
     parse: parse,
+    copyGoStyleIntoObject: copyGoStyleIntoObject,
     stringify: stringify
   };
 })

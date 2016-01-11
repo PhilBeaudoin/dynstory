@@ -32,6 +32,7 @@ type Paragraph struct {
 
 var (
   mainTemplate []byte
+  newParagraphTemplate []byte
 )
 
 func init() {
@@ -40,6 +41,11 @@ func init() {
     panic(err)
   }
   mainTemplate = content
+  content, err = ioutil.ReadFile("dynamic-story/newParagraphTemplate.html")
+  if err != nil {
+    panic(err)
+  }
+  newParagraphTemplate = content
 
   http.HandleFunc("/", root)
   http.HandleFunc("/get-paragraphs/", getParagraphs)
@@ -52,7 +58,7 @@ func root(w http.ResponseWriter, r *http.Request) {
     return
   }
   w.Header().Set("Content-type", "text/html; charset=utf-8")
-  fmt.Fprintf(w, "Not implemented yet.")
+  w.Write(mainTemplate)
 }
 
 func getParagraphs(w http.ResponseWriter, r *http.Request) {
@@ -82,8 +88,8 @@ func getParagraphs(w http.ResponseWriter, r *http.Request) {
     results = append(results, buf.String())
   }
 
-  w.Header().Set("Content-type", "text/html; charset=utf-8")
-  fmt.Fprintf(w, "[%s]\n", strings.Join(results, ",\n"))
+  w.Header().Set("Content-type", "application/json; charset=utf-8")
+  fmt.Fprintf(w, "{%s}\n", strings.Join(results, ",\n"))
 }
 
 func newParagraph(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +97,7 @@ func newParagraph(w http.ResponseWriter, r *http.Request) {
     return
   }
   w.Header().Set("Content-type", "text/html; charset=utf-8")
-  w.Write(mainTemplate)
+  w.Write(newParagraphTemplate)
 }
 
 func saveParagraph(w http.ResponseWriter, r *http.Request) {
@@ -112,7 +118,7 @@ func saveParagraph(w http.ResponseWriter, r *http.Request) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  w.Header().Set("Content-type", "text/html; charset=utf-8")
+  w.Header().Set("Content-type", "text/plain; charset=utf-8")
   fmt.Fprintf(w, "%s", key.Encode())
 }
 
