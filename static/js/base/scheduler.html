@@ -21,21 +21,28 @@ limitations under the License.
 <script>
 'use strict';
 
-base.exportTo('ds.model', function() {
+base.exportTo('base', function() {
 
-  function Paragraph(fullText) {
-    this.fullText_ = fullText;
+  // Schedules a function to be executed
+  function Scheduler(delay, func) {
+    this.delay_ = delay;
+    this.func_ = func;
+    this.timer_ = undefined;
   }
 
-  Paragraph.prototype = {
-
-    get fullText() {
-      return this.fullText_;
+  Scheduler.prototype = {
+    schedule: function() {
+      if (this.timer_)
+        clearTimeout(this.timer_);
+      this.timer_ = setTimeout(function() {
+        this.timer_ = undefined;
+        this.func_();
+      }.bind(this), this.delay_);
     }
   };
 
   return {
-    Paragraph: Paragraph
+    Scheduler: Scheduler
   };
-});
+})
 </script>

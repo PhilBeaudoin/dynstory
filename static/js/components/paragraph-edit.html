@@ -20,6 +20,8 @@ limitations under the License.
 <link rel="import" href="/components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="/js/base/json.html">
+<link rel="import" href="/js/base/scheduler.html">
+<link rel="import" href="/js/model/compiledParagraph.html">
 <link rel="import" href="/js/model/paragraph.html">
 
 
@@ -46,7 +48,10 @@ limitations under the License.
       },
       // Element Lifecycle
       ready: function() {
-        this.compileTimer_ = undefined;
+        this.compileScheduler_ =
+            new base.Scheduler(500, this.compile_.bind(this));
+        this.saveScheduler_ =
+            new base.Scheduler(2000, this.saveParagraph_.bind(this));
         if (this.key && this.key.length > 0) {
           this.$.ajaxGet.params = {
             key: this.key
@@ -57,25 +62,20 @@ limitations under the License.
       attached: function() {
       },
       detached: function() {
+        this.compile_();
+        this.saveParagraph();
       },
       handleChange: function() {
-        this.scheduleCompile_();
+        this.compileScheduler_.schedule();
+        this.saveScheduler_.schedule();
       },
-      scheduleCompile_: function() {
-        if (this.compileTimer_)
-          clearTimeout(this.compileTimer_);
-        this.compileTimer_ = setTimeout(this.createParagraph_.bind(this), 2000);
-      },
-      createParagraph_: function() {
-        this.compileTimer_ = undefined;
+      compile_: function() {
         this.paragraph_ = new ds.model.Paragraph(this.$.text.value);
-        error = this.paragraph_.compile();
-        this.saveParagraph_();
-        // TODO(PhilBeaudoin): Report errors in the UI.
-        if (error)
-          console.log(error);
+        this.compiledParagraph_ =
+            new ds.model.CompiledParagraph(this.paragraph_);
       },
       saveParagraph_: function() {
+        this.compile_();
         if (this.key && this.key.length > 0) {
           this.$.ajaxPost.params = {
             key: this.key
@@ -93,11 +93,7 @@ limitations under the License.
         this.paragraph_ = new ds.model.Paragraph();
         base.json.copyGoStyleIntoObject(data.detail.response, this.paragraph_);
         this.$.text.value = this.paragraph_.fullText;
-        error = this.paragraph_.compile();
-        this.saveParagraph_();
         // TODO(PhilBeaudoin): Report errors in the UI.
-        if (error)
-          console.log(error);
       }
     });
   </script>
