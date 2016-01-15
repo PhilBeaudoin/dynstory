@@ -18,6 +18,10 @@ limitations under the License.
 
 <link rel="import" href="/components/polymer/polymer.html">
 <link rel="import" href="/components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/components/paper-button/paper-button.html">
+<link rel="import" href="/components/paper-item/paper-item.html">
+<link rel="import" href="/components/paper-material/paper-material.html">
+<link rel="import" href="/components/paper-styles/paper-styles.html">
 
 <link rel="import" href="/js/base/json.html">
 <link rel="import" href="/js/model/compiledParagraph.html">
@@ -26,19 +30,28 @@ limitations under the License.
 
 <dom-module id="paragraph-list">
   <template>
-    <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
-        on-response="refreshed_" auto></iron-ajax>
-    <template is="dom-repeat" items="{{paragraphInfos}}">
+    <style>
+      paper-material {
+        padding: 16px;
+      }
+      paper-item {
+        @apply(--paper-font-body2);
+      }
+    </style>
+    <paper-material elevation="1">
+      <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
+          on-response="refreshed_" auto></iron-ajax>
+      <template is="dom-repeat" items="{{paragraphInfos}}">
+        <paper-item key="[[item.key]]" on-tap="openKey">
+          {{item.summary}}
+        </paper-item>
+      </template>
       <div>
-        <a href="/edit-paragraph/?key={{item.key}}">{{item.summary}}</a>
+        <paper-button on-tap="refresh" id="refresh" raised>
+        Refresh
+        </paper-button>
       </div>
-    </template>
-    <form>
-      <div>
-        <input on-tap="refresh" value="Refresh" id="refresh" type="button">
-        </input>
-      </div>
-    </form>
+    </paper-material elevation="1">
   </template>
 
   <script>
@@ -57,6 +70,10 @@ limitations under the License.
       },
       refresh: function() {
         this.$.ajaxGet.generateRequest();
+      },
+      openKey: function(event) {
+        key = Polymer.dom(event).localTarget.key;
+        window.location.assign("/edit-paragraph/?key=" + key);
       },
       refreshed_: function(data) {
         var map = data.detail.response;

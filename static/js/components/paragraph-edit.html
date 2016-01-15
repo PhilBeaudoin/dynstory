@@ -19,6 +19,8 @@ limitations under the License.
 <link rel="import" href="/components/polymer/polymer.html">
 <link rel="import" href="/components/iron-ajax/iron-ajax.html">
 
+<link rel="import" href="/components/paper-input/paper-textarea.html">
+
 <link rel="import" href="/js/base/json.html">
 <link rel="import" href="/js/base/scheduler.html">
 <link rel="import" href="/js/model/compiledParagraph.html">
@@ -34,10 +36,11 @@ limitations under the License.
         on-response="loaded_"></iron-ajax>
     <form>
       <div>
-        <textarea disabled$="{{disabled}}" 
+        <paper-textarea label="Paragraph" 
+            disabled$="{{disabled}}" 
             on-input="handleChange" on-propertychanged="handleChange"
             name="content" id="text"
-            rows="10" cols="60"></textarea>
+            rows="10" cols="60"></paper-textarea>
       </div>
     </form>
   </template>

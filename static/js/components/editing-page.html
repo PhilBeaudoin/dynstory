@@ -17,21 +17,41 @@ limitations under the License.
 -->
 
 <link rel="import" href="/components/polymer/polymer.html">
+<link rel="import" href="/components/paper-material/paper-material.html">
+<link rel="import" href="/components/paper-styles/paper-styles.html">
 
 <link rel="import" href="/js/components/paragraph-edit.html">
 
 
 <dom-module id="editing-page">
   <template>
-    <paragraph-edit id="editor" key="[[key]]" compiled="{{compiled}}"
-        saved="{{saved}}" saving="{{saving}}"></paragraph-edit>
-    <div>{{textState(compiled, saved, saving)}}</div>
-    <div><a href="/edit-paragraph/" on-tap="createNewParagraph">
-        Create new paragraph.
-    </a></div>
-    <div><a href="/" on-tap="listParagraphs">
-        List of paragraphs.
-    </a></div>
+    <style>
+      paper-material {
+        padding: 16px;
+      }
+
+      .state {
+        @apply(--paper-font-button);
+      }
+
+      p {
+        @apply(--paper-font-body2);
+      }
+
+    </style>
+    <paper-material elevation="1">
+      <paragraph-edit id="editor" key="[[key]]" compiled="{{compiled}}"
+          saved="{{saved}}" saving="{{saving}}"></paragraph-edit>
+      <p class="state">{{textState(compiled, saved, saving)}}</p>
+      <p>
+        <a href="/edit-paragraph/" on-tap="createNewParagraph">
+          Create new paragraph
+        </a><br />
+        <a href="/" on-tap="listParagraphs">
+          List of paragraphs
+        </a>
+      </p>
+    </paper-material elevation="1">
   </template>
 
   <script>
