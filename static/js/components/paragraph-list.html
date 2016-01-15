@@ -20,6 +20,7 @@ limitations under the License.
 <link rel="import" href="/components/iron-ajax/iron-ajax.html">
 
 <link rel="import" href="/js/base/json.html">
+<link rel="import" href="/js/model/compiledParagraph.html">
 <link rel="import" href="/js/model/paragraph.html">
 
 
@@ -28,7 +29,9 @@ limitations under the License.
     <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
         on-response="refreshed_" auto></iron-ajax>
     <template is="dom-repeat" items="{{paragraphInfos}}">
-      <div>Full text: <a href="/edit-paragraph/?key={{item.key}}">{{item.fullText}}</a></div>
+      <div>
+        <a href="/edit-paragraph/?key={{item.key}}">{{item.summary}}</a>
+      </div>
     </template>
     <form>
       <div>
@@ -62,10 +65,11 @@ limitations under the License.
         for (var key in map) {
           var paragraph = new ds.model.Paragraph();
           base.json.copyGoStyleIntoObject(map[key], paragraph);
-          this.paragraphMap[key] = paragraph;
+          var compiledParagraph = new ds.model.CompiledParagraph(paragraph);
+          this.paragraphMap[key] = compiledParagraph;
           this.push('paragraphInfos', {
             key: key,
-            fullText: paragraph.fullText
+            summary: compiledParagraph.getSummary()
           });
         }
       }

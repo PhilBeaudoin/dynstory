@@ -21,12 +21,10 @@ limitations under the License.
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
     <title>Dynamic Story</title>
     <script src="/components/webcomponentsjs/webcomponents-lite.min.js"></script>
-    <link rel="import" href="/js/components/paragraph-edit.html">
+    <link rel="import" href="/js/components/editing-page.html">
   </head>
   <body unresolved>
-    <paragraph-edit {{if .}}key="{{.}}"{{end}}>
-    </paragraph-edit>
-    <a href="/edit-paragraph/">Create new paragraph.</a><br />
-    <a href="/">List of paragraphs.</a>
+    <editing-page {{if .}}key="{{.}}"{{end}}>
+    </editing-page>
   </body>
 </html>

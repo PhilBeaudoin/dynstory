@@ -39,11 +39,22 @@ base.exportTo('ds.model', function() {
   CompiledParagraph.prototype = {
 
     get fullText() {
-      return this.fullText_;
+      return this.paragraph_.fullText_;
     },
 
     get title() {
       return this.title_;
+    },
+
+    getSummary() {
+      if (this.error_)
+        return 'ERROR: ' + this.error_;
+      if (this.title_)
+        return this.title
+      var maxLength = 50
+      if (this.fullText.length > maxLength)
+        return this.fullText.substr(0, maxLength) + "..."
+      return this.fullText
     },
 
     clearFields_: function() {
@@ -57,14 +68,14 @@ base.exportTo('ds.model', function() {
     //   #someFunctionWithoutParams
     //   Regular text #withAFunctionInIt or |special text|.
     compile_: function() {
-      var tokens = tokenize(this.paragraph_.fullText);
+      var tokens = tokenize(this.fullText);
       this.ast_ = [];
       this.error_ = parseText(this.ast_, tokens);
       this.clearFields_();
       if (this.error_ === undefined)
         this.error_ = this.fieldsFromAst_();
       if (this.error_ !== undefined)
-        console.log(this.error_);
+        console.log("Compile error: " + this.error_);
       else
         console.log("Compile successful.")
     },
@@ -79,6 +90,7 @@ base.exportTo('ds.model', function() {
             if (node.params.length !== 1) {
               error = "Function Title expects 1 parameter."
             }
+            this.title_ = node.params[0];
           } else if (node.name === "Out") {
             if (node.params.length !== 1)
               error = "Function Out expects 1 parameter."

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright 2016 Philippe Beaudoin
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="/components/polymer/polymer.html">
+
+<link rel="import" href="/js/components/paragraph-edit.html">
+
+
+<dom-module id="editing-page">
+  <template>
+    <paragraph-edit id="editor" key="[[key]]" compiled="{{compiled}}"
+        saved="{{saved}}" saving="{{saving}}"></paragraph-edit>
+    <div>{{textState(compiled, saved, saving)}}</div>
+    <div><a href="/edit-paragraph/" on-tap="createNewParagraph">
+        Create new paragraph.
+    </a></div>
+    <div><a href="/" on-tap="listParagraphs">
+        List of paragraphs.
+    </a></div>
+  </template>
+
+  <script>
+    Polymer({
+      is: 'editing-page',
+      properties: {
+        key: String,
+        compiled: Boolean,
+        saved: Boolean,
+        saving: Boolean
+      },
+      // Element Lifecycle
+      ready: function() {
+        this.skipBeforeUnload_ = false;
+      },
+      attached: function() {
+        window.addEventListener("beforeunload", this.beforeUnload_.bind(this));
+      },
+      detached: function() {
+      },
+      textState: function(compiled, saved, saving) {
+        if (saved)
+          return "SAVED";
+        if (saving)
+          return "NOT SAVED (saving)";
+        if (compiled)
+          return "NOT SAVED (compiled)";
+        return "NOT SAVED";
+      },
+      createNewParagraph: function(event) {
+        this.ensureSavedThenNavigate_(event, "/edit-paragraph/")
+      },
+      listParagraphs: function(event) {
+        this.ensureSavedThenNavigate_(event, "/")
+      },
+      beforeUnload_: function (event) {
+        if (!this.saved && !this.skipBeforeUnload_)
+          event.returnValue = "Navigate even if paragraph not saved?";
+      },
+      ensureSavedThenNavigate_: function(event, url) {
+        // We'll save if needed, remove the before unload listener.
+        this.skipBeforeUnload_ = true;
+        if (!this.saved) {
+          event.preventDefault();
+          this.$.editor.disabled = true;
+          this.$.editor.addEventListener('saved-changed', function(event) {
+            if (event.detail.value)
+              window.location.assign(url);
+          });
+          this.$.editor.saveParagraph();
+        }
+      }
+    });
+  </script>
+</dom-module>

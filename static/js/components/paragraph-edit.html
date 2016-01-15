@@ -34,7 +34,9 @@ limitations under the License.
         on-response="loaded_"></iron-ajax>
     <form>
       <div>
-        <textarea on-keypress="handleChange" name="content" id="text"
+        <textarea disabled$="{{disabled}}" 
+            on-input="handleChange" on-propertychanged="handleChange"
+            name="content" id="text"
             rows="10" cols="60"></textarea>
       </div>
     </form>
@@ -44,14 +46,61 @@ limitations under the License.
     Polymer({
       is: 'paragraph-edit',
       properties: {
-        key: String
+        disabled: Boolean,
+        key: String,
+        currentVersion: {
+          type: Number,
+          value: 0,
+          readOnly: true,
+          notify: true
+        },
+        compiledVersion: {
+          type: Number,
+          value: 0,
+          readOnly: true,
+          notify: true
+        },
+        savedVersion: {
+          type: Number,
+          value: 0,
+          readOnly: true,
+          notify: true
+        },
+        compiled: {
+          type: Boolean,
+          readOnly: true,
+          notify: true,
+          computed: 'isCompiled(currentVersion, compiledVersion)'
+        },
+        saved: {
+          type: Boolean,
+          readOnly: true,
+          notify: true,
+          computed: 'isSaved(currentVersion, savedVersion, saving)'
+        },
+        saving: {
+          type: Boolean,
+          value: false,
+          readOnly: true,
+          notify: true
+        },
+        paragraph: {
+          type: Number,
+          readOnly: true,
+          notify: true
+        },
+        compiledParagraph: {
+          type: Number,
+          readOnly: true,
+          notify: true
+        }
       },
       // Element Lifecycle
       ready: function() {
         this.compileScheduler_ =
             new base.Scheduler(500, this.compile_.bind(this));
         this.saveScheduler_ =
-            new base.Scheduler(2000, this.saveParagraph_.bind(this));
+            new base.Scheduler(2000, this.saveParagraph.bind(this));
         if (this.key && this.key.length > 0) {
           this.$.ajaxGet.params = {
             key: this.key
@@ -62,37 +111,57 @@ limitations under the License.
       attached: function() {
       },
       detached: function() {
-        this.compile_();
-        this.saveParagraph();
+      },
+      isCompiled: function(currentVersion, compiledVersion) {
+        return currentVersion === compiledVersion;
+      },
+      isSaved: function(currentVersion, savedVersion, saving) {
+        return currentVersion === savedVersion && !saving;
       },
       handleChange: function() {
+        if (this.currentVersion === this.compiledVersion ||
+            this.currentVersion === this.savedVersion) {
+          this._setCurrentVersion(this.currentVersion + 1);
+        }
         this.compileScheduler_.schedule();
         this.saveScheduler_.schedule();
       },
       compile_: function() {
-        this.paragraph_ = new ds.model.Paragraph(this.$.text.value);
-        this.compiledParagraph_ =
-            new ds.model.CompiledParagraph(this.paragraph_);
+        if (this.compiled)
+          return;
+        this._setParagraph(new ds.model.Paragraph(this.$.text.value));
+        this._setCompiledParagraph(
+            new ds.model.CompiledParagraph(this.paragraph));
+        this._setCompiledVersion(this.currentVersion);
       },
-      saveParagraph_: function() {
+      saveParagraph: function() {
+        if (this.saved || this.saving)
+          return;
         this.compile_();
         if (this.key && this.key.length > 0) {
           this.$.ajaxPost.params = {
             key: this.key
           };
         }
-        this.$.ajaxPost.body = base.json.stringify(this.paragraph_);
+        this.$.ajaxPost.body = base.json.stringify(this.paragraph);
         this.$.ajaxPost.generateRequest();
+        this._setSavedVersion(this.currentVersion);
+        this._setSaving(true);
       },
-      saved_: function(data) {
+      saved_: function(event) {
         console.log('Saved!');
-        this.key = data.detail.response;
+        this.key = event.detail.response;
+        this._setSaving(false);
       },
-      loaded_: function(data) {
+      loaded_: function(event) {
         console.log('Loaded!');
-        this.paragraph_ = new ds.model.Paragraph();
-        base.json.copyGoStyleIntoObject(data.detail.response, this.paragraph_);
-        this.$.text.value = this.paragraph_.fullText;
+        var paragraph = new ds.model.Paragraph();
+        base.json.copyGoStyleIntoObject(event.detail.response, paragraph);
+        this.$.text.value = paragraph.fullText;
+        this._setParagraph(paragraph);
+        this._setCurrentVersion(this.currentVersion + 1);
+        this._setSavedVersion(this.currentVersion);
+        this.compile_();
         // TODO(PhilBeaudoin): Report errors in the UI.
       }
     });
