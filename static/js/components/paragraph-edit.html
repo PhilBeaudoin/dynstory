@@ -17,12 +17,13 @@ limitations under the License.
 -->
 
 <link rel="import" href="/components/polymer/polymer.html">
-<link rel="import" href="/components/iron-ajax/iron-ajax.html">
 
+<link rel="import" href="/components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/components/paper-input/paper-textarea.html">
 
 <link rel="import" href="/js/base/json.html">
 <link rel="import" href="/js/base/scheduler.html">
+
 <link rel="import" href="/js/model/compiledParagraph.html">
 <link rel="import" href="/js/model/paragraph.html">
 
@@ -88,12 +89,12 @@ limitations under the License.
           notify: true
         },
         paragraph: {
-          type: Number,
+          type: Object,
           readOnly: true,
           notify: true
         },
         compiledParagraph: {
-          type: Number,
+          type: Object,
           readOnly: true,
           notify: true
         }

@@ -17,6 +17,7 @@ limitations under the License.
 -->
 
 <link rel="import" href="/components/polymer/polymer.html">
+
 <link rel="import" href="/components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/components/paper-button/paper-button.html">
 <link rel="import" href="/components/paper-item/paper-item.html">
@@ -24,6 +25,7 @@ limitations under the License.
 <link rel="import" href="/components/paper-styles/paper-styles.html">
 
 <link rel="import" href="/js/base/json.html">
+
 <link rel="import" href="/js/model/compiledParagraph.html">
 <link rel="import" href="/js/model/paragraph.html">
 
@@ -38,9 +40,9 @@ limitations under the License.
         @apply(--paper-font-body2);
       }
     </style>
+    <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
+        on-response="refreshed_" auto></iron-ajax>
     <paper-material elevation="1">
-      <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
-          on-response="refreshed_" auto></iron-ajax>
       <template is="dom-repeat" items="{{paragraphInfos}}">
         <paper-item key="[[item.key]]" on-tap="openKey">
           {{item.summary}}

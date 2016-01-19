@@ -17,9 +17,11 @@ limitations under the License.
 -->
 
 <link rel="import" href="/components/polymer/polymer.html">
+
 <link rel="import" href="/components/paper-material/paper-material.html">
 <link rel="import" href="/components/paper-styles/paper-styles.html">
 
+<link rel="import" href="/js/components/out-link-list.html">
 <link rel="import" href="/js/components/paragraph-edit.html">
 
 
@@ -41,7 +43,10 @@ limitations under the License.
     </style>
     <paper-material elevation="1">
       <paragraph-edit id="editor" key="[[key]]" compiled="{{compiled}}"
-          saved="{{saved}}" saving="{{saving}}"></paragraph-edit>
+          saved="{{saved}}" saving="{{saving}}"
+          compiled-paragraph="{{compiledParagraph}}"></paragraph-edit>
+      <out-link-list key="[[key]]" compiled-paragraph="[[compiledParagraph]]">
+      </out-link-list>
       <p class="state">{{textState(compiled, saved, saving)}}</p>
       <p>
         <a href="/edit-paragraph/" on-tap="createNewParagraph">
@@ -61,7 +66,11 @@ limitations under the License.
         key: String,
         compiled: Boolean,
         saved: Boolean,
-        saving: Boolean
+        saving: Boolean,
+        compiledParagraph: {
+          type: Object,
+          notify: true
+        }
       },
       // Element Lifecycle
       ready: function() {

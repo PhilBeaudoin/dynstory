@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright 2016 Philippe Beaudoin
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="/components/polymer/polymer.html">
+
+<link rel="import" href="/components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/components/paper-item/paper-item.html">
+<link rel="import" href="/components/paper-material/paper-material.html">
+
+<link rel="import" href="/js/base/json.html">
+
+
+<dom-module id="out-link-list">
+  <template>
+    <style>
+      paper-material {
+        padding: 16px;
+      }
+
+      .state {
+        @apply(--paper-font-button);
+      }
+
+      p {
+        @apply(--paper-font-body2);
+      }
+    </style>
+    <iron-ajax id="ajaxPost" url="/save-link/" handle-as="text"
+        method="POST" content-type="application/json" on-response="saved_">
+    </iron-ajax>
+    <paper-material elevation="1">
+      <template is="dom-repeat" items="{{compiledParagraph.outLinks}}">
+        <paper-item out-link="[[item]]" on-tap="openLink">
+          Out: {{item}}
+        </paper-item>
+      </template>
+    </paper-material elevation="1">
+  </template>
+
+  <script>
+    Polymer({
+      is: 'out-link-list',
+      properties: {
+        key: String,
+        compiledParagraph: Object
+      },
+      // Element Lifecycle
+      ready: function() {
+      },
+      attached: function() {
+      },
+      detached: function() {
+      },
+      openLink: function(event) {
+        if (!this.key || this.key.length == 0) {
+          return;
+        }
+        outLink = Polymer.dom(event).localTarget.outLink;
+        this.$.ajaxPost.body = base.json.stringify({
+          'outLink': outLink,
+          'fromKey': this.key
+        });
+        this.$.ajaxPost.generateRequest();
+      },
+      saved_: function() {
+        console.log('Saved!');
+        console.log(event.detail.response);
+      }
+    });
+  </script>
+</dom-module>

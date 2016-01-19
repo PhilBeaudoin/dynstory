@@ -31,6 +31,12 @@ type Paragraph struct {
   FullText string
 }
 
+type Link struct {
+  OutLink string
+  FromKey string
+  ToKey string
+}
+
 var (
   mainTemplate []byte
   editParagraphTemplate = template.Must(template.ParseFiles(
@@ -49,6 +55,7 @@ func init() {
   http.HandleFunc("/get-paragraphs/", getParagraphs)
   http.HandleFunc("/get-paragraph/", getParagraph)
   http.HandleFunc("/save-paragraph/", saveParagraph)
+  http.HandleFunc("/save-link/", saveLink)
 }
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -138,7 +145,7 @@ func saveParagraph(w http.ResponseWriter, r *http.Request) {
   }
   var err error
   var key *datastore.Key
-  keyString := r.FormValue("key");
+  keyString := r.FormValue("key")
   if keyString != "" {
     key, err = datastore.DecodeKey(keyString)
   } else {
@@ -154,6 +161,49 @@ func saveParagraph(w http.ResponseWriter, r *http.Request) {
 
   w.Header().Set("Content-type", "text/plain; charset=utf-8")
   fmt.Fprintf(w, "%s", key.Encode())
+}
+
+func saveLink(w http.ResponseWriter, r *http.Request) {
+  if !checkUser(w, r) {
+    return
+  }
+  ctx := appengine.NewContext(r)
+  dec := json.NewDecoder(r.Body)
+  var link Link
+  if err := dec.Decode(&link); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if (link.OutLink == "" || link.FromKey == "") {
+    http.Error(w, "Invalid link, must specify OutLink and FromKey.",
+        http.StatusBadRequest)
+    return
+  }
+  var err error
+  var linkKey *datastore.Key
+  keyString := r.FormValue("key")
+  if keyString != "" {
+    linkKey, err = datastore.DecodeKey(keyString)
+  } else {
+    linkKey = datastore.NewIncompleteKey(ctx, "Link", nil)
+  }
+  if err == nil && link.ToKey == "" {
+    pKey := datastore.NewIncompleteKey(ctx, "Paragraph", nil)
+    if pKey, err = datastore.Put(ctx, pKey, new(Paragraph)); err == nil {
+      link.ToKey = pKey.Encode()
+    }
+  }
+
+  if err == nil {
+    linkKey, err = datastore.Put(ctx, linkKey, &link)
+  }
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-type", "text/plain; charset=utf-8")
+  fmt.Fprintf(w, "%s\n%s", linkKey.Encode(), link.ToKey)
 }
 
 func checkUser(w http.ResponseWriter, r *http.Request) bool {

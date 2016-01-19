@@ -46,6 +46,10 @@ base.exportTo('ds.model', function() {
       return this.title_;
     },
 
+    get outLinks() {
+      return this.outLinks_;
+    },
+
     getSummary() {
       if (this.error_)
         return 'ERROR: ' + this.error_;
@@ -59,7 +63,7 @@ base.exportTo('ds.model', function() {
 
     clearFields_: function() {
       this.title_ = '';
-      this.outLinks_ = {};
+      this.outLinks_ = [];
       this.player_ = -1;
     },
 
@@ -94,10 +98,10 @@ base.exportTo('ds.model', function() {
           } else if (node.name === "Out") {
             if (node.params.length !== 1)
               error = "Function Out expects 1 parameter."
-            var linkName = node.params[0]
-            if (this.outLinks_.hasOwnProperty(linkName))
+            var linkName = String(node.params[0])
+            if (this.outLinks_.indexOf(linkName) > -1)
               error = "Out link '" + linkName +"' already defined."
-            this.outLinks_[linkName] = true;
+            this.outLinks_.push(linkName);
           } else if (node.name === "P1") {
             if (node.params.length !== 0)
               error = "Function P1 doesn't expect parameters."
@@ -116,7 +120,7 @@ base.exportTo('ds.model', function() {
   };
 
   function tokenize(text) {
-    return text.match(tokenizingRegExp);
+    return text.match(tokenizingRegExp) || [];
   }
 
   function parseText(ast, tokens) {
