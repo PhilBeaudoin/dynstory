@@ -109,6 +109,24 @@ base.exportTo('ds.model', function() {
             if (node.params.length !== 0)
               error = "Function P2 doesn't expect parameters."
             this.player_ = 1;
+          } else if (node.name === "Card") {
+            if (node.params.length !== 0)
+              error = "Function Card doesn't expect parameters."
+            this.card_ = true;
+            this.private_ = false;
+          } else if (node.name === "PrivateCard") {
+            if (node.params.length !== 0)
+              error = "Function PrivateCard doesn't expect parameters."
+            this.card_ = true;
+            this.private_ = true;
+          } else if (node.name === "Symbol") {
+            if (node.params.length !== 1)
+              error = "Function Symbol expects 1 parameter."
+            // TODO: Do something with the symbol.
+          } else if (node.name === "TitleSymbol") {
+            if (node.params.length !== 1)
+              error = "Function TitleSymbol expects 1 parameter."
+            // TODO: Do something with the symbol.
           } else {
             error = "Unknown function: " + node.name;
           }
