@@ -39,14 +39,20 @@ limitations under the License.
       paper-item {
         @apply(--paper-font-body2);
       }
-    </style>
+     paper-material a {
+        text-decoration: none;
+        color: black;
+      }
+      </style>
     <iron-ajax id="ajaxGet" url="/get-paragraphs/" handle-as="json"
         on-response="refreshed_" auto></iron-ajax>
     <paper-material elevation="1">
       <template is="dom-repeat" items="{{paragraphInfos}}">
-        <paper-item key="[[item.key]]" on-tap="openKey">
-          {{item.summary}}
-        </paper-item>
+        <a href="/edit-paragraph/?key=[[item.key]]" tabIndex="-1">
+          <paper-item>
+            {{item.summary}}
+          </paper-item>
+        </a>
       </template>
       <div>
         <paper-button on-tap="refresh" id="refresh" raised>
@@ -72,10 +78,6 @@ limitations under the License.
       },
       refresh: function() {
         this.$.ajaxGet.generateRequest();
-      },
-      openKey: function(event) {
-        key = Polymer.dom(event).localTarget.key;
-        window.location.assign("/edit-paragraph/?key=" + key);
       },
       refreshed_: function(data) {
         var map = data.detail.response;

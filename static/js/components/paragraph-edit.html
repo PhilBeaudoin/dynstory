@@ -51,7 +51,10 @@ limitations under the License.
       is: 'paragraph-edit',
       properties: {
         disabled: Boolean,
-        key: String,
+        key: {
+          String,
+          notify: true
+        },
         currentVersion: {
           type: Number,
           value: 0,

@@ -23,7 +23,8 @@ limitations under the License.
 <link rel="import" href="/components/paper-material/paper-material.html">
 
 <link rel="import" href="/js/base/json.html">
-
+<link rel="import" href="/js/model/outLink.html">
+<link rel="import" href="/js/model/outLinkCollection.html">
 
 <dom-module id="out-link-list">
   <template>
@@ -36,18 +37,26 @@ limitations under the License.
         @apply(--paper-font-button);
       }
 
+      a {
+        text-decoration: none;
+        color: black;
+      }
+
       p {
         @apply(--paper-font-body2);
       }
     </style>
-    <iron-ajax id="ajaxPost" url="/save-link/" handle-as="text"
-        method="POST" content-type="application/json" on-response="saved_">
-    </iron-ajax>
+    <iron-ajax id="ajaxPost" url="/save-link/" method="POST" 
+        content-type="application/json" on-response="saved_"></iron-ajax>
     <paper-material elevation="1">
-      <template is="dom-repeat" items="{{compiledParagraph.outLinks}}">
-        <paper-item out-link="[[item]]" on-tap="openLink">
-          Out: {{item}}
-        </paper-item>
+      <template is="dom-repeat"
+          items="{{generateLinkList(compiledParagraph, outLinkCollection)}}">
+        <a href="/edit-paragraph/?key=[[item.toKey]]" tabIndex="-1"
+            on-tap="openLink">
+          <paper-item index="[[index]]">
+              Out: {{item.label}}
+          </paper-item>
+        </a>
       </template>
     </paper-material elevation="1">
   </template>
@@ -57,29 +66,75 @@ limitations under the License.
       is: 'out-link-list',
       properties: {
         key: String,
-        compiledParagraph: Object
+        tools: Object,
+        compiledParagraph: Object,
+        outLinkCollection: {
+          type: Object,
+          notify: true
+        },
+        saved: {
+          type: Boolean,
+          value: true,
+          readOnly: true,
+          notify: true
+        }
       },
       // Element Lifecycle
       ready: function() {
+        this.linkList_ = [];
       },
       attached: function() {
       },
       detached: function() {
+      },      
+      generateLinkList: function(compiledParagraph, outLinkCollection) {
+        this.linkList_ = [];
+        compiledParagraph.outLinkLabels.forEach(function(label) {
+          var outLink = outLinkCollection.findByKeyLabel(this.key, label);
+          if (!outLink)
+            outLink = new ds.model.OutLink(label, this.key, undefined);
+          this.linkList_.push(outLink);
+        }.bind(this));
+        return this.linkList_;
       },
       openLink: function(event) {
-        if (!this.key || this.key.length == 0) {
+        if (!this.key || this.key.length == 0 || !this.saved) {
+          // Do not navigate if a link is being created or the key isn't set.
+          event.preventDefault();
           return;
         }
-        outLink = Polymer.dom(event).localTarget.outLink;
-        this.$.ajaxPost.body = base.json.stringify({
-          'outLink': outLink,
-          'fromKey': this.key
-        });
+        outLink = this.linkList_[Polymer.dom(event).localTarget.index];
+        if (outLink.toKey) {
+          this.tools.ensureSavedThenLink(
+              event, this.navigateUrl_(outLink.label));
+          return;
+        }
+        // No toKey. Create a new paragraph, then navigate.
+        this._setSaved(false);
+        event.preventDefault();
+        this.navigationFunction_ = function(outLink) {
+          this.tools.ensureSavedThenNavigate(
+              event, this.navigateUrl_(outLink.label));
+        }
+        this.$.ajaxPost.body = base.json.stringify(outLink);
         this.$.ajaxPost.generateRequest();
       },
-      saved_: function() {
+      saved_: function(event) {
         console.log('Saved!');
-        console.log(event.detail.response);
+        var outLink = new ds.model.OutLink();
+        base.json.copyGoStyleIntoObject(event.detail.response, outLink);
+        this.outLinkCollection.addLink(outLink);
+        this._setSaved(true);
+        this.navigationFunction_(outLink);
+        var temp = this.outLinkCollection;
+        // Hack so polymer is notified that a change has happened. No idea how
+        // to do this in a cleaner way.
+        this.outLinkCollection = undefined;
+        this.outLinkCollection = temp;
+      },
+      navigateUrl_: function(label) {
+        var outLink = this.outLinkCollection.findByKeyLabel(this.key, label);
+        return "/edit-paragraph/?key=" + outLink.toKey;
       }
     });
   </script>

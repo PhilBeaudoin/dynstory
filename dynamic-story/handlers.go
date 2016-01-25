@@ -32,7 +32,7 @@ type Paragraph struct {
 }
 
 type Link struct {
-  OutLink string
+  Label string
   FromKey string
   ToKey string
 }
@@ -55,6 +55,7 @@ func init() {
   http.HandleFunc("/get-paragraphs/", getParagraphs)
   http.HandleFunc("/get-paragraph/", getParagraph)
   http.HandleFunc("/save-paragraph/", saveParagraph)
+  http.HandleFunc("/get-outlinks/", getOutLinks)
   http.HandleFunc("/save-link/", saveLink)
 }
 
@@ -163,6 +164,41 @@ func saveParagraph(w http.ResponseWriter, r *http.Request) {
   fmt.Fprintf(w, "%s", key.Encode())
 }
 
+func getOutLinks(w http.ResponseWriter, r *http.Request) {
+  if !checkUser(w, r) {
+    return
+  }
+  ctx := appengine.NewContext(r)
+  q := datastore.NewQuery("Link")
+  keyString := r.FormValue("key")
+  if keyString != "" {
+    q = q.Filter("FromKey =", keyString)
+  }
+  var links []Link
+  keys, err := q.GetAll(ctx, &links)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  var results []string
+  for i, l := range links {
+    var buf bytes.Buffer
+    b := bufio.NewWriter(&buf)
+    fmt.Fprintf(b, `"%s":`, keys[i].Encode())
+    enc := json.NewEncoder(b)
+    if err := enc.Encode(&l); err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+    }
+    b.Flush()
+    results = append(results, buf.String())
+  }
+
+  w.Header().Set("Content-type", "application/json; charset=utf-8")
+  fmt.Fprintf(w, "{%s}\n", strings.Join(results, ",\n"))
+}
+
 func saveLink(w http.ResponseWriter, r *http.Request) {
   if !checkUser(w, r) {
     return
@@ -174,8 +210,8 @@ func saveLink(w http.ResponseWriter, r *http.Request) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  if (link.OutLink == "" || link.FromKey == "") {
-    http.Error(w, "Invalid link, must specify OutLink and FromKey.",
+  if (link.Label == "" || link.FromKey == "") {
+    http.Error(w, "Invalid link, must specify Label and FromKey.",
         http.StatusBadRequest)
     return
   }
@@ -202,8 +238,12 @@ func saveLink(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  w.Header().Set("Content-type", "text/plain; charset=utf-8")
-  fmt.Fprintf(w, "%s\n%s", linkKey.Encode(), link.ToKey)
+  w.Header().Set("Content-type", "application/json; charset=utf-8")
+  enc := json.NewEncoder(w)
+  if err := enc.Encode(&link); err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
 }
 
 func checkUser(w http.ResponseWriter, r *http.Request) bool {

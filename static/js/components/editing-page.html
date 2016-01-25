@@ -18,12 +18,15 @@ limitations under the License.
 
 <link rel="import" href="/components/polymer/polymer.html">
 
+<link rel="import" href="/components/iron-ajax/iron-ajax.html">
 <link rel="import" href="/components/paper-material/paper-material.html">
 <link rel="import" href="/components/paper-styles/paper-styles.html">
 
 <link rel="import" href="/js/components/out-link-list.html">
 <link rel="import" href="/js/components/paragraph-edit.html">
 
+<link rel="import" href="/js/model/outLink.html">
+<link rel="import" href="/js/model/outLinkCollection.html">
 
 <dom-module id="editing-page">
   <template>
@@ -31,23 +34,25 @@ limitations under the License.
       paper-material {
         padding: 16px;
       }
-
       .state {
         @apply(--paper-font-button);
       }
-
       p {
         @apply(--paper-font-body2);
       }
 
     </style>
+    <iron-ajax id="ajaxGet" url="/get-outlinks/" handle-as="json"
+        on-response="outLinksRefreshed_" auto></iron-ajax>
     <paper-material elevation="1">
-      <paragraph-edit id="editor" key="[[key]]" compiled="{{compiled}}"
-          saved="{{saved}}" saving="{{saving}}"
+      <paragraph-edit id="editor" key="{{key}}" compiled="{{parCompiled}}"
+          saved="{{parSaved}}" saving="{{parSaving}}"
           compiled-paragraph="{{compiledParagraph}}"></paragraph-edit>
-      <out-link-list key="[[key]]" compiled-paragraph="[[compiledParagraph]]">
-      </out-link-list>
-      <p class="state">{{textState(compiled, saved, saving)}}</p>
+      <out-link-list key="[[key]]" saved="{{outLinkSaved}}" tools="[[tools]]" 
+          out-link-collection="{{outLinkCollection}}"
+          compiled-paragraph="[[compiledParagraph]]"></out-link-list>
+      <p class="state">
+          {{textState(parCompiled, parSaved, parSaving, outLinkSaved)}}</p>
       <p>
         <a href="/edit-paragraph/" on-tap="createNewParagraph">
           Create new paragraph
@@ -64,54 +69,117 @@ limitations under the License.
       is: 'editing-page',
       properties: {
         key: String,
-        compiled: Boolean,
-        saved: Boolean,
-        saving: Boolean,
+        parCompiled: Boolean,
+        parSaved: Boolean,
+        parSaving: Boolean,
+        outLinkSaved: Boolean,
+        outLinkCollection: {
+          type: Object,
+          value: new ds.model.OutLinkCollection()
+        },
+        tools: {
+          type: Object,
+          readOnly: true
+        },
         compiledParagraph: {
           type: Object,
+          notify: true
+        },
+        saved: {
+          type: Boolean,
+          computed: 'isSaved_(parSaved, outLinkSaved)',
           notify: true
         }
       },
       // Element Lifecycle
       ready: function() {
         this.skipBeforeUnload_ = false;
+        this._setTools({
+          ensureSavedThenLink: this.ensureSavedThenLink_.bind(this),
+          ensureSavedThenNavigate: this.ensureSavedThenNavigate_.bind(this)
+        });
+        if (this.key && this.key.length > 0) {
+          this.$.ajaxGet.params = {
+            key: this.key
+          };
+          this.$.ajaxGet.generateRequest();        
+        }
       },
       attached: function() {
         window.addEventListener("beforeunload", this.beforeUnload_.bind(this));
       },
       detached: function() {
       },
-      textState: function(compiled, saved, saving) {
-        if (saved)
+      textState: function(parCompiled, parSaved, parSaving, outLinkSaved) {
+        if (parSaved && outLinkSaved)
           return "SAVED";
-        if (saving)
+        if (parSaving || !outLinkSaved)
           return "NOT SAVED (saving)";
-        if (compiled)
+        if (parCompiled)
           return "NOT SAVED (compiled)";
         return "NOT SAVED";
       },
+      isSaved_: function(parSaved, outLinkSaved) {
+        return parSaved && outLinkSaved;
+      },
       createNewParagraph: function(event) {
-        this.ensureSavedThenNavigate_(event, "/edit-paragraph/")
+        this.ensureSavedThenLink_(event, "/edit-paragraph/")
       },
       listParagraphs: function(event) {
-        this.ensureSavedThenNavigate_(event, "/")
+        this.ensureSavedThenLink_(event, "/")
       },
-      beforeUnload_: function (event) {
-        if (!this.saved && !this.skipBeforeUnload_)
+      beforeUnload_: function(event) {
+        if ((!this.parSaved || !this.outLinkSaved) && !this.skipBeforeUnload_)
           event.returnValue = "Navigate even if paragraph not saved?";
       },
-      ensureSavedThenNavigate_: function(event, url) {
+      ensureSavedThenAction_: function(event, url, action) {
         // We'll save if needed, remove the before unload listener.
+        if (event.detail.sourceEvent.button === 2 ||
+            event.detail.sourceEvent.metaKey ||
+            event.detail.sourceEvent.ctrlKey) {
+          // Will open in new window, no need to save.
+          action();
+          return;
+        }
         this.skipBeforeUnload_ = true;
-        if (!this.saved) {
+        if (!this.parSaved || !this.outLinkSaved) {
           event.preventDefault();
           this.$.editor.disabled = true;
-          this.$.editor.addEventListener('saved-changed', function(event) {
+          this.addEventListener('saved-changed', function(event) {
+            if (typeof(url) === 'function')
+              url = url();
             if (event.detail.value)
               window.location.assign(url);
           });
           this.$.editor.saveParagraph();
+        } else {
+          action();
         }
+      },
+      ensureSavedThenLink_: function(event, url) {
+        this.ensureSavedThenAction_(event, url, function(){});
+      },
+      ensureSavedThenNavigate_: function(event, url) {
+        this.ensureSavedThenAction_(event, url, function(){
+          if (event.detail.sourceEvent.button === 2 ||
+              event.detail.sourceEvent.metaKey ||
+              event.detail.sourceEvent.ctrlKey) {
+            // Open in new window.
+            window.open(url, '_blank')
+          } else {
+            window.location.assign(url);
+          }
+        });
+      },
+      outLinksRefreshed_: function(data) {
+        var map = data.detail.response;
+        var newCollection = new ds.model.OutLinkCollection();
+        for (var key in map) {
+          var outLink = new ds.model.OutLink();
+          base.json.copyGoStyleIntoObject(map[key], outLink);
+          newCollection.addLink(outLink);
+        }
+        this.outLinkCollection = newCollection;
       }
     });
   </script>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<!--
+@license
+Copyright 2016 Philippe Beaudoin
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="/js/base/base.html">
+
+<link rel="import" href="/js/model/outLink.html">
+
+<script>
+'use strict';
+
+base.exportTo('ds.model', function() {
+
+  function OutLinkCollection() {
+    this.outLinks = {};
+  }
+
+  OutLinkCollection.prototype = {
+
+    findByKeyLabel: function(key, label) {
+      if (!key || !this.outLinks[key])
+        return undefined;
+      return this.outLinks[key][label];
+    },
+
+    addLink: function(outLink) {
+      this.outLinks[outLink.fromKey] = this.outLinks[outLink.fromKey] || {};
+      this.outLinks[outLink.fromKey][outLink.label] =
+          this.outLinks[outLink.fromKey][outLink.label] || {};
+      this.outLinks[outLink.fromKey][outLink.label] = outLink;
+    },
+
+    clear: function() {
+      this.outLinks = {};
+    }
+  };
+
+  return {
+    OutLinkCollection: OutLinkCollection
+  };
+});
+</script>
