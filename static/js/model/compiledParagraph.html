@@ -99,9 +99,8 @@ base.exportTo('ds.model', function() {
             if (node.params.length !== 1)
               error = "Function Out expects 1 parameter."
             var label = String(node.params[0])
-            if (this.outLinkLabels_.indexOf(label) > -1)
-              error = "Out link '" + label +"' already defined."
-            this.outLinkLabels_.push(label);
+            if (this.outLinkLabels_.indexOf(label) === -1)
+              this.outLinkLabels_.push(label);
           } else if (node.name === "P1") {
             if (node.params.length !== 0)
               error = "Function P1 doesn't expect parameters."
