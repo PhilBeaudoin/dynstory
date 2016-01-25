@@ -65,6 +65,8 @@ base.exportTo('ds.model', function() {
       this.title_ = '';
       this.outLinkLabels_ = [];
       this.player_ = -1;
+      this.card_ = false;
+      this.private_ = false;
     },
 
     // Compile fullText. The supported language is:
@@ -127,6 +129,9 @@ base.exportTo('ds.model', function() {
             if (node.params.length !== 1)
               error = "Function TitleSymbol expects 1 parameter."
             // TODO: Do something with the symbol.
+          } else if (node.name === "TODO") {
+            if (node.params.length !== 0)
+              error = "Function TODO doesn't expect parameters."
           } else {
             error = "Unknown function: " + node.name;
           }
